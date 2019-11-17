@@ -63,18 +63,23 @@ func (p proxy) proxy(w http.ResponseWriter, url *url.URL) {
 
 func (p proxy) mirrorFrom(dir string, w http.ResponseWriter, req *http.Request) {
 	name := path.Join(dir, path.Clean(req.URL.Path))
-	err := p.ensureFileExists(name, req.URL)
+	ok, err := p.ensureFileExists(name, req.URL)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if !ok {
+		http.Error(w, "Not OK", http.StatusNotFound)
 		return
 	}
 	log.Println("Serving", req.URL)
 	http.ServeFile(w, req, name)
 }
 
-func (p proxy) ensureFileExists(name string, url *url.URL) (err error) {
+func (p proxy) ensureFileExists(name string, url *url.URL) (ok bool, err error) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
+	ok = true
 
 	_, err = os.Stat(name)
 	if err == nil || !os.IsNotExist(err) {
@@ -87,6 +92,11 @@ func (p proxy) ensureFileExists(name string, url *url.URL) (err error) {
 		return
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode >= 400 {
+		log.Println("Not OK: ", resp.Status)
+		ok = false
+		return
+	}
 
 	dirname := filepath.Dir(name)
 	err = os.MkdirAll(dirname, os.ModePerm)
