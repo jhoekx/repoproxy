@@ -1,0 +1,14 @@
+name: Build and push container
+on:
+  push
+
+jobs:
+  build:
+    name: Build container
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build docker image
+        run: docker build -t docker.pkg.github.com/jhoekx/repoproxy/repoproxy:$GITHUB_SHA .
