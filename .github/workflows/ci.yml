@@ -11,4 +11,10 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Build docker image
-        run: docker build -t docker.pkg.github.com/jhoekx/repoproxy/repoproxy:$GITHUB_SHA .
+        run: docker build -t docker.pkg.github.com/${{ github.repository }}/repoproxy:latest .
+
+      - name: Authenticate to registry
+        run: docker login -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} docker.pkg.github.com
+
+      - name: Push docker image
+        run: docker push docker.pkg.github.com/${{ github.repository }}/repoproxy:latest
